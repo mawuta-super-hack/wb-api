@@ -1,0 +1,4 @@
+APP_TITLE='WB_API_Apps'
+DATABASE_DSN='postgresql+asyncpg://postgres:postgres@localhost:5432/collection'
+REDIS = 'redis://localhost:6379'
+TELEGRAM_TOKEN = 'sometoken'

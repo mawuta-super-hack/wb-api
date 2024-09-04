@@ -17,7 +17,7 @@ class Product(Base):
     current_price: Mapped[float]
     sum_quantity: Mapped[int]
     quantity_by_sizes: Mapped[List['Size']] = relationship(
-        back_populates='product', cascade='all, delete-orphan'
+        back_populates='product', cascade='save-update, merge, delete, delete-orphan'
     )
 
 
@@ -30,8 +30,7 @@ class Size(Base):
     size: Mapped[str] = mapped_column(String(30))
 
     quantity_by_wh: Mapped[List['Wh']] = relationship(
-        back_populates='size', cascade='all, delete-orphan'
-    )
+        back_populates='size', cascade='save-update, merge, delete, delete-orphan')
 
     product_id: Mapped[int] = mapped_column(ForeignKey('product.nm_id'))
     product: Mapped['Product'] = relationship(back_populates='quantity_by_sizes')

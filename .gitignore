@@ -5,6 +5,7 @@ __pycache__/
 venv
 .vscode
 src/.env
+.env
 tasks.log
 .pytest_cache
 prod.json
