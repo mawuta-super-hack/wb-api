@@ -25,7 +25,7 @@ async def command_start_handler(message: Message) -> None:
 async def product_handler(message: Message) -> None:
     try:
         id_product = message.text
-        url = f'http://127.0.0.1:8000/api/v1/product/{id_product}'
+        url = f'http://web_fastapi:8000/api/v1/product/{id_product}'
         async with ClientSession() as session:
             async with session.get(
                 url=url

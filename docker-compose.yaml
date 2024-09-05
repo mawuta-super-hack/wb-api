@@ -1,0 +1,97 @@
+version: '3'
+
+volumes:
+  app:
+  db:
+
+services:
+
+  db:
+    image: postgres:14.5-alpine
+    container_name: db
+    restart: always
+    env_file: 
+      - .env
+    # volumes:
+    #   - db:/var/lib/postgresql/data
+    # ports:
+    #   - "5432:5432"
+    
+  redis:
+    image: redis
+    container_name: 'redis'
+    restart: always
+    command: redis-server
+    ports:
+      - '6379:6379'
+
+  web_fastapi:
+    build: ./src
+    container_name: 'web_fastapi'
+    restart: always
+    env_file: 
+      - .env
+    #command: /app/core/entrypoints/fastapi.sh
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+    #entrypoint: "make start"
+    volumes:
+      #- media:/app/media/
+      - app:/app/
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
+      - redis
+  
+  taskiq_worker:
+    build: ./src
+    container_name: 'taskiq_worker'
+    restart: always
+    env_file: 
+      - .env
+    command: taskiq worker core.taskiq:broker task.task
+    #command: /app/core/entrypoints/worker.sh
+    volumes:
+      #- media:/app/media/
+      - app:/app/
+    # ports:
+    #   - '8000:8000'
+    depends_on:
+      - db
+      - redis
+      - web_fastapi
+
+  taskiq_scheduler:
+    build: ./src
+    container_name: 'taskiq_scheduler'
+    restart: always
+    env_file: 
+      - .env
+    command: taskiq scheduler core.taskiq:scheduler  --skip-first-run  
+    #ommand: /app/core/entrypoints/scheduler.sh
+    volumes:
+      #- media:/app/media/
+      - app:/app/
+    # ports:
+    #   - '8000:8000'
+    depends_on:
+      - db
+      - redis
+      - web_fastapi
+      - taskiq_worker
+
+  bot:
+    build: ./bot
+    container_name: bot
+    restart: always
+    command: python wb_bot.py
+    env_file: 
+      - .env
+    depends_on:
+      - db
+      - redis
+      - web_fastapi
+      - taskiq_worker
+      - taskiq_scheduler
+    
+    
