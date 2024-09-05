@@ -1,49 +1,55 @@
 
+from fastapi.encoders import jsonable_encoder
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from taskiq import TaskiqDepends
+
 from core.taskiq import broker
 from db.db import get_session
-from taskiq import TaskiqDepends
-from models.product import Product, Wh, Size
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import exc, select
-from fastapi.encoders import jsonable_encoder
+from models.product import Product, Size, Wh
 from services.parser import parse
 
 
 @broker.task
-async def create_task(obj_in: dict, db: AsyncSession = TaskiqDepends(get_session)) -> None:
+async def create_task(
+    obj_in: dict,
+    db: AsyncSession = TaskiqDepends(get_session)
+) -> None:
 
-    obj_in_data = jsonable_encoder(obj_in)
-    prod_id = obj_in_data['nm_id']
-    sizes = obj_in_data.pop('quantity_by_sizes')
+    parse_data = jsonable_encoder(obj_in)
+    product_id = parse_data['nm_id']
+    quantity_by_sizes = parse_data.pop('quantity_by_sizes')
 
-    db_obj = Product(**obj_in_data)
-    db.add(db_obj)
+    db_product = Product(**parse_data)
+    db.add(db_product)
     await db.commit()
 
-    for s in sizes:
-        obj = Size(size=s['size'], product_id=prod_id)
-        db.add(obj)
+    for size in quantity_by_sizes:
+        db_size = Size(size=size['size'], product_id=product_id)
+        db.add(db_size)
         await db.commit()
-        
-        whs = s.pop('quantity_by_wh')
-        if whs == []:
-            continue
-        
-        for w in whs:
-            ob = Wh(**w)
-            ob.size_id = obj.id
-            db.add(ob)
-            await db.commit()
-    await db.refresh(db_obj)
+        warehouses = size.pop('quantity_by_wh')
 
-@broker.task(schedule=[{"cron": "*/5 * * * *"}])
+        if warehouses == []:
+            continue
+        for wh in warehouses:
+            db_wh = Wh(**wh)
+            db_wh.size_id = db_size.id
+            db.add(db_wh)
+            await db.commit()
+    await db.refresh(db_product)
+
+
+@broker.task(schedule=[{'cron': '*/5 * * * *'}])
 async def update_task(db: AsyncSession = TaskiqDepends(get_session)) -> None:
     products = await db.execute(select(Product))
 
     for product in products.scalars().all():
         new_data = await parse(product.nm_id)
-                
-        old_product = await db.scalar(select(Product).where(Product.nm_id==product.nm_id))
+
+        old_product = await db.scalar(select(Product).where(
+            Product.nm_id == product.nm_id)
+        )
         await db.delete(old_product)
         await db.commit()
 

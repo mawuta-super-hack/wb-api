@@ -1,30 +1,30 @@
-from typing import Optional
-from datetime import datetime
-
-from pydantic import BaseModel, ConfigDict, computed_field
-
-from pydantic import BaseModel, Field
 from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 
 class Price(BaseModel):
-   product: Optional[int] = Field(alias='product')
- 
+
+    product: Optional[int] = Field(alias='product')
+
+
 class Stock(BaseModel):
+
     model_config = ConfigDict(from_attributes=True)
     wh: int
     quantity: int = Field(alias='qty')
 
+
 class Size(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+
     size: str = Field(alias='name')
-    price: Optional[Price]  = Field(exclude=True, default=None)
+    price: Optional[Price] = Field(exclude=True, default=None)
     quantity_by_wh: Optional[List[Stock]] = Field(alias='stocks', default=None)
 
+
 class ProductSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True, loc_by_alias=False)
-    #model_config = ConfigDict(response_model_by_alias=True)
-    nm_id: int= Field(alias='id')
+
+    nm_id: int = Field(alias='id')
     sum_quantity: int = Field(alias='totalQuantity')
     quantity_by_sizes: List[Size] = Field(alias='sizes')
 
@@ -34,8 +34,8 @@ class ProductSchema(BaseModel):
         return self.quantity_by_sizes[0].price.product / 100
 
 
-
 class StockResponse(BaseModel):
+
     wh: int
     quantity: int
 
@@ -43,6 +43,7 @@ class StockResponse(BaseModel):
 
 
 class SizeResponse(BaseModel):
+
     size: str
     quantity_by_wh: List[StockResponse]
 
@@ -50,9 +51,10 @@ class SizeResponse(BaseModel):
 
 
 class ProductResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    
+
     nm_id: int
     current_price: float
     sum_quantity: int
     quantity_by_sizes: List[SizeResponse]
+
+    model_config = ConfigDict(from_attributes=True)

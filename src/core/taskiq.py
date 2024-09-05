@@ -1,10 +1,10 @@
-from taskiq import TaskiqScheduler
-from taskiq.schedule_sources import LabelScheduleSource
-from taskiq import InMemoryBroker
-from taskiq_aio_pika import AioPikaBroker
-from taskiq_redis import RedisAsyncResultBackend, ListQueueBroker, RedisScheduleSource
-from dotenv import load_dotenv
 from os import getenv
+
+from dotenv import load_dotenv
+from taskiq import TaskiqScheduler
+from taskiq_redis import (ListQueueBroker, RedisAsyncResultBackend,
+                          RedisScheduleSource)
+
 load_dotenv()
 
 
